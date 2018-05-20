@@ -724,6 +724,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         CTxMemPoolEntry entry(ptx, nFees, nAcceptTime, chainActive.Height(),
                               fSpendsCoinbase, nSigOpsCost, lp);
         unsigned int nSize = entry.GetTxSize();
+        unsigned int nWeight = entry.GetTxWeight();
 
         // Check that the transaction doesn't have an excessive number of
         // sigops, making it impossible to mine. Since the coinbase transaction
@@ -734,14 +735,14 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-txns-too-many-sigops", false,
                 strprintf("%d", nSigOpsCost));
 
-        CAmount mempoolRejectFee = pool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFee(nSize);
+        CAmount mempoolRejectFee = pool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFeeFromWeight(nWeight);
         if (!bypass_limits && mempoolRejectFee > 0 && nModifiedFees < mempoolRejectFee) {
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool min fee not met", false, strprintf("%d < %d", nModifiedFees, mempoolRejectFee));
         }
 
         // No transactions are allowed below minRelayTxFee except from disconnected blocks
-        if (!bypass_limits && nModifiedFees < ::minRelayTxFee.GetFee(nSize)) {
-            return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "min relay fee not met", false, strprintf("%d < %d", nModifiedFees, ::minRelayTxFee.GetFee(nSize)));
+        if (!bypass_limits && nModifiedFees < ::minRelayTxFee.GetFeeFromWeight(nWeight)) {
+            return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "min relay fee not met", false, strprintf("%d < %d", nModifiedFees, ::minRelayTxFee.GetFeeFromWeight(nWeight)));
         }
 
         if (nAbsurdFee && nFees > nAbsurdFee)

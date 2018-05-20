@@ -37,6 +37,23 @@ CAmount CFeeRate::GetFee(size_t nBytes_) const
     return nFee;
 }
 
+CAmount CFeeRate::GetFeeFromWeight(size_t weight_) const
+{
+    assert(weight_ <= uint64_t(std::numeric_limits<int64_t>::max()));
+    int64_t nWeight = int64_t(weight_);
+
+    CAmount nFee = nSatoshisPerK / 4 * nWeight / 1000;
+
+    if (nFee == 0 && nWeight != 0) {
+        if (nSatoshisPerK > 0)
+            nFee = CAmount(1);
+        if (nSatoshisPerK < 0)
+            nFee = CAmount(-1);
+    }
+
+    return nFee;
+}
+
 std::string CFeeRate::ToString() const
 {
     return strprintf("%d.%08d %s/kB", nSatoshisPerK / COIN, nSatoshisPerK % COIN, CURRENCY_UNIT);
